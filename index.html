@@ -2,26 +2,48 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>SLITHER GOD</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SLITHER GOD - IMMORTAL</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- MENU -->
 <div id="menu">
     <h1>SLITHER GOD</h1>
+
+    <div class="coins">Coins: <span id="coinCount">0</span></div>
+
+    <h3>PILIH SKIN</h3>
+    <div class="skins">
+        <button class="skinBtn" data-skin="green">GREEN</button>
+        <button class="skinBtn" data-skin="blue">BLUE</button>
+        <button class="skinBtn" data-skin="gold" data-cost="50">GOLD (50)</button>
+        <button class="skinBtn" data-skin="rainbow" data-cost="100">RAINBOW (100)</button>
+    </div>
+
     <button id="startBtn">START GAME</button>
 </div>
 
+<!-- GAME OVER -->
+<div id="gameOver">
+    <h2>GAME OVER</h2>
+    <p id="finalScore"></p>
+    <button onclick="location.reload()">RESTART</button>
+</div>
+
+<!-- UI -->
 <div class="ui">
     Score: <span id="score">0</span><br>
-    Energy: <span id="energy">100</span>
+    Energy: <span id="energy">100</span><br>
+    Rank: <span id="rank">1</span><br>
     <button id="boostBtn">BOOST</button>
 </div>
 
-<!-- Joystick (auto hide di PC) -->
-<div id="joystick">
-    <div id="stick"></div>
+<!-- Leaderboard -->
+<div class="leaderboard">
+    <h4>TOP 5</h4>
+    <div id="leaders"></div>
 </div>
 
 <canvas id="game"></canvas>
