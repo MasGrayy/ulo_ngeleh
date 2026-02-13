@@ -1,9 +1,9 @@
 body{
     margin:0;
     overflow:hidden;
-    background:#000;
-    font-family:Arial;
+    background:black;
     color:white;
+    font-family:Arial;
 }
 
 canvas{
@@ -12,11 +12,11 @@ canvas{
     left:0;
 }
 
-#menu, #gameOver{
+#menu,#gameOver{
     position:fixed;
     width:100%;
     height:100%;
-    background:#000;
+    background:black;
     display:flex;
     justify-content:center;
     align-items:center;
@@ -28,7 +28,7 @@ canvas{
 
 button{
     padding:10px 20px;
-    margin:8px;
+    margin:10px;
     border:none;
     border-radius:8px;
     cursor:pointer;
@@ -37,16 +37,6 @@ button{
 
 #startBtn{ background:#00ff88; }
 
-.skins{ display:flex; gap:10px; flex-wrap:wrap; }
-
-.skinBtn:nth-child(1){ background:#00ff88; }
-.skinBtn:nth-child(2){ background:#00aaff; }
-.skinBtn:nth-child(3){ background:gold; color:black; }
-.skinBtn:nth-child(4){
-    background:linear-gradient(45deg,red,orange,yellow,green,blue,purple);
-    color:black;
-}
-
 .ui{
     position:fixed;
     top:10px;
@@ -54,19 +44,4 @@ button{
     background:rgba(0,0,0,0.6);
     padding:10px;
     border-radius:10px;
-}
-
-.leaderboard{
-    position:fixed;
-    top:10px;
-    right:10px;
-    background:rgba(0,0,0,0.6);
-    padding:10px;
-    border-radius:10px;
-    width:150px;
-}
-
-h1{
-    font-size:50px;
-    text-shadow:0 0 20px #00ff88;
 }
