@@ -1,26 +1,22 @@
 body{
     margin:0;
     overflow:hidden;
-    background:black;
-    font-family:Arial, sans-serif;
+    background:#000;
+    font-family:Arial;
     color:white;
 }
 
-/* Canvas */
 canvas{
     position:fixed;
     top:0;
     left:0;
-    width:100vw;
-    height:100vh;
 }
 
-/* Menu */
-#menu{
+#menu, #gameOver{
     position:fixed;
     width:100%;
     height:100%;
-    background:black;
+    background:#000;
     display:flex;
     justify-content:center;
     align-items:center;
@@ -28,60 +24,49 @@ canvas{
     z-index:10;
 }
 
-#menu h1{
-    font-size:clamp(32px,6vw,60px);
-}
+#gameOver{ display:none; }
 
-#menu button{
-    padding:12px 30px;
-    font-size:18px;
+button{
+    padding:10px 20px;
+    margin:8px;
     border:none;
-    border-radius:10px;
-    background:#00ff88;
+    border-radius:8px;
     cursor:pointer;
+    font-weight:bold;
 }
 
-/* UI */
+#startBtn{ background:#00ff88; }
+
+.skins{ display:flex; gap:10px; flex-wrap:wrap; }
+
+.skinBtn:nth-child(1){ background:#00ff88; }
+.skinBtn:nth-child(2){ background:#00aaff; }
+.skinBtn:nth-child(3){ background:gold; color:black; }
+.skinBtn:nth-child(4){
+    background:linear-gradient(45deg,red,orange,yellow,green,blue,purple);
+    color:black;
+}
+
 .ui{
     position:fixed;
     top:10px;
     left:10px;
     background:rgba(0,0,0,0.6);
-    padding:10px 15px;
+    padding:10px;
     border-radius:10px;
-    z-index:5;
 }
 
-#boostBtn{
-    margin-top:5px;
-    padding:6px 15px;
-    background:#00ff88;
-    border:none;
-    border-radius:8px;
-}
-
-/* JOYSTICK PREMIUM */
-#joystick{
+.leaderboard{
     position:fixed;
-    bottom:40px;
-    left:40px;
-    width:120px;
-    height:120px;
-    background:rgba(255,255,255,0.08);
-    border:2px solid rgba(255,255,255,0.25);
-    border-radius:50%;
-    display:none; /* default hidden (PC) */
-    z-index:20;
+    top:10px;
+    right:10px;
+    background:rgba(0,0,0,0.6);
+    padding:10px;
+    border-radius:10px;
+    width:150px;
 }
 
-#stick{
-    width:60px;
-    height:60px;
-    background:#00ff88;
-    border-radius:50%;
-    position:absolute;
-    top:30px;
-    left:30px;
-    box-shadow:0 0 15px #00ff88;
-    transition:0.1s;
+h1{
+    font-size:50px;
+    text-shadow:0 0 20px #00ff88;
 }
