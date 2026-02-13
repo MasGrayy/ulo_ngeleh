@@ -1,175 +1,232 @@
-window.addEventListener("DOMContentLoaded", function(){
-
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-const menu = document.getElementById("menu");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
 const startBtn = document.getElementById("startBtn");
+const menu = document.getElementById("menu");
+const gameOverDiv = document.getElementById("gameOver");
+const finalScoreEl = document.getElementById("finalScore");
+const leadersEl = document.getElementById("leaders");
+
 const scoreEl = document.getElementById("score");
 const energyEl = document.getElementById("energy");
+const rankEl = document.getElementById("rank");
 const boostBtn = document.getElementById("boostBtn");
+const coinCountEl = document.getElementById("coinCount");
 
-const joy = document.getElementById("joystick");
-const stick = document.getElementById("stick");
+const skinBtns = document.querySelectorAll(".skinBtn");
 
-/* ================= DETECT TOUCH DEVICE ================= */
+let coins = 0;
+let selectedSkin = "green";
+let unlocked = {green:true, blue:true};
 
-if("ontouchstart" in window){
-    joy.style.display = "block";
-}
+skinBtns.forEach(btn=>{
+    btn.onclick = ()=>{
+        let skin = btn.dataset.skin;
+        let cost = btn.dataset.cost;
 
-/* ================= CANVAS RESPONSIVE ================= */
+        if(cost && !unlocked[skin]){
+            if(coins >= cost){
+                coins -= cost;
+                unlocked[skin] = true;
+                alert("Skin unlocked!");
+            } else {
+                alert("Not enough coins!");
+                return;
+            }
+        }
+        selectedSkin = skin;
+        coinCountEl.innerText = coins;
+    };
+});
 
-function resizeCanvas(){
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
-
-/* ================= GAME VAR ================= */
-
-let snake=[], foods=[];
+let player, enemies=[], foods=[];
 let dir={x:1,y:0};
-let score=0;
-let energy=100;
-let boost=false;
+let score=0, energy=100;
 let alive=false;
 
 let camera={x:0,y:0};
-const worldSize=2000;
+const worldSize=4000;
 
-/* ================= START GAME ================= */
+/* START */
 
-function startGame(){
+startBtn.onclick=()=>{
     menu.style.display="none";
-    snake=[{x:1000,y:1000}];
+    init();
+};
+
+function init(){
+    player={body:[{x:2000,y:2000}], length:20};
+    enemies=[];
     foods=[];
     score=0;
     energy=100;
     alive=true;
 
-    for(let i=0;i<150;i++){
-        foods.push({
-            x:Math.random()*worldSize,
-            y:Math.random()*worldSize
-        });
+    for(let i=0;i<400;i++){
+        foods.push({x:Math.random()*worldSize,y:Math.random()*worldSize});
+    }
+
+    for(let i=0;i<25;i++){
+        enemies.push(createEnemy());
     }
 }
-startBtn.onclick=startGame;
 
-/* ================= PC CONTROL ================= */
+function createEnemy(){
+    return{
+        body:[{x:Math.random()*worldSize,y:Math.random()*worldSize}],
+        dir:{x:Math.random()-0.5,y:Math.random()-0.5},
+        length:20+Math.random()*50,
+        color:"hsl("+Math.random()*360+",100%,50%)",
+        alive:true
+    };
+}
 
-document.addEventListener("mousemove", e=>{
-    if("ontouchstart" in window) return; // disable on mobile
-    let dx=e.clientX-window.innerWidth/2;
-    let dy=e.clientY-window.innerHeight/2;
+/* CONTROL */
+
+document.addEventListener("mousemove",e=>{
+    let dx=e.clientX-canvas.width/2;
+    let dy=e.clientY-canvas.height/2;
     let mag=Math.hypot(dx,dy);
-    if(mag>0){
-        dir.x=dx/mag;
-        dir.y=dy/mag;
-    }
+    if(mag>0){ dir.x=dx/mag; dir.y=dy/mag; }
 });
 
-/* ================= JOYSTICK ANALOG ================= */
+boostBtn.onmousedown=()=>boost=true;
+boostBtn.onmouseup=()=>boost=false;
+let boost=false;
 
-let dragging=false;
-
-joy.addEventListener("touchstart", ()=>dragging=true);
-
-joy.addEventListener("touchmove", e=>{
-    if(!dragging) return;
-    e.preventDefault();
-
-    let rect=joy.getBoundingClientRect();
-    let x=e.touches[0].clientX-rect.left-rect.width/2;
-    let y=e.touches[0].clientY-rect.top-rect.height/2;
-
-    let max=rect.width/2;
-    let dist=Math.hypot(x,y);
-
-    if(dist>max){
-        x=x/dist*max;
-        y=y/dist*max;
-    }
-
-    stick.style.left=(x+rect.width/2-stick.offsetWidth/2)+"px";
-    stick.style.top=(y+rect.height/2-stick.offsetHeight/2)+"px";
-
-    dir.x=x/max;
-    dir.y=y/max;
-});
-
-joy.addEventListener("touchend", ()=>{
-    dragging=false;
-    stick.style.left="30px";
-    stick.style.top="30px";
-    dir={x:1,y:0};
-});
-
-/* ================= BOOST ================= */
-
-boostBtn.onmousedown=boostBtn.ontouchstart=()=>boost=true;
-boostBtn.onmouseup=boostBtn.ontouchend=()=>boost=false;
-
-/* ================= UPDATE ================= */
+/* UPDATE */
 
 function update(){
 if(!alive) return;
 
-let head=snake[0];
+let head=player.body[0];
 let speed=boost&&energy>0?4:2;
 
-if(boost&&energy>0){
-    energy-=0.5;
-}else{
-    if(energy<100) energy+=0.2;
-}
+if(boost&&energy>0) energy-=0.4;
+else if(energy<100) energy+=0.2;
 
-let newHead={
-    x:head.x+dir.x*speed,
-    y:head.y+dir.y*speed
-};
+let newHead={x:head.x+dir.x*speed,y:head.y+dir.y*speed};
+player.body.unshift(newHead);
+if(player.body.length>player.length) player.body.pop();
 
-snake.unshift(newHead);
-
-for(let i=foods.length-1;i>=0;i--){
-    let f=foods[i];
+/* FOOD */
+foods.forEach((f,i)=>{
     if(Math.hypot(f.x-newHead.x,f.y-newHead.y)<10){
         foods.splice(i,1);
+        player.length+=3;
         score+=10;
+        coins+=1;
     }
+});
+
+/* AI */
+enemies.forEach(enemy=>{
+if(!enemy.alive) return;
+
+let eHead=enemy.body[0];
+
+/* AI chase player */
+let dx=newHead.x-eHead.x;
+let dy=newHead.y-eHead.y;
+let dist=Math.hypot(dx,dy);
+
+if(dist<300){
+    enemy.dir.x=dx/dist;
+    enemy.dir.y=dy/dist;
+}else if(Math.random()<0.02){
+    enemy.dir.x=Math.random()-0.5;
+    enemy.dir.y=Math.random()-0.5;
 }
 
-if(snake.length>score/10+20){
-    snake.pop();
-}
+eHead.x+=enemy.dir.x*2;
+eHead.y+=enemy.dir.y*2;
 
-camera.x=newHead.x-window.innerWidth/2;
-camera.y=newHead.y-window.innerHeight/2;
+enemy.body.unshift({x:eHead.x,y:eHead.y});
+if(enemy.body.length>enemy.length) enemy.body.pop();
+
+/* collide player */
+enemy.body.forEach(seg=>{
+    if(Math.hypot(seg.x-newHead.x,seg.y-newHead.y)<8){
+        gameOver();
+    }
+});
+});
+
+/* CAMERA SMOOTH */
+camera.x += ((newHead.x - canvas.width/2) - camera.x) * 0.1;
+camera.y += ((newHead.y - canvas.height/2) - camera.y) * 0.1;
+
+/* RANK */
+let bigger=enemies.filter(e=>e.alive&&e.length>player.length).length;
+rankEl.innerText=bigger+1;
 
 scoreEl.innerText=score;
 energyEl.innerText=Math.floor(energy);
+coinCountEl.innerText=coins;
+
+updateLeaderboard();
 }
 
-/* ================= DRAW ================= */
+/* DRAW */
 
 function draw(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
+ctx.save();
+ctx.translate(-camera.x,-camera.y);
+
+/* grid */
+ctx.strokeStyle="rgba(255,255,255,0.05)";
+for(let i=0;i<worldSize;i+=100){
+ctx.beginPath();
+ctx.moveTo(i,0);
+ctx.lineTo(i,worldSize);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(0,i);
+ctx.lineTo(worldSize,i);
+ctx.stroke();
+}
+
+/* food */
 ctx.fillStyle="white";
 foods.forEach(f=>{
-    ctx.beginPath();
-    ctx.arc(f.x-camera.x,f.y-camera.y,4,0,Math.PI*2);
-    ctx.fill();
+ctx.beginPath();
+ctx.arc(f.x,f.y,4,0,Math.PI*2);
+ctx.fill();
 });
 
-snake.forEach((s,i)=>{
-    ctx.fillStyle=i===0?"#fff":"#00ff88";
-    ctx.beginPath();
-    ctx.arc(s.x-camera.x,s.y-camera.y,8,0,Math.PI*2);
-    ctx.fill();
+/* player */
+player.body.forEach(s=>{
+if(selectedSkin==="rainbow")
+ctx.fillStyle="hsl("+(Date.now()/10%360)+",100%,50%)";
+else if(selectedSkin==="gold")
+ctx.fillStyle="gold";
+else if(selectedSkin==="blue")
+ctx.fillStyle="#00aaff";
+else
+ctx.fillStyle="#00ff88";
+
+ctx.beginPath();
+ctx.arc(s.x,s.y,8,0,Math.PI*2);
+ctx.fill();
 });
+
+/* enemies */
+enemies.forEach(enemy=>{
+if(!enemy.alive) return;
+ctx.fillStyle=enemy.color;
+enemy.body.forEach(s=>{
+ctx.beginPath();
+ctx.arc(s.x,s.y,8,0,Math.PI*2);
+ctx.fill();
+});
+});
+
+ctx.restore();
 }
 
 function loop(){
@@ -179,4 +236,18 @@ requestAnimationFrame(loop);
 }
 loop();
 
-});
+/* LEADERBOARD */
+
+function updateLeaderboard(){
+let arr=[...enemies.map(e=>e.length),player.length];
+arr.sort((a,b)=>b-a);
+leadersEl.innerHTML=arr.slice(0,5).map((l,i)=>`${i+1}. ${Math.floor(l)}`).join("<br>");
+}
+
+/* GAME OVER */
+
+function gameOver(){
+alive=false;
+gameOverDiv.style.display="flex";
+finalScoreEl.innerText="Final Score: "+score;
+}
