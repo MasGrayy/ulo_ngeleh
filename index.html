@@ -2,28 +2,37 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>SLITHER GOD</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- MENU -->
 <div id="menu">
     <h1>SLITHER GOD</h1>
+
+    <label>Pilih Skin</label>
+    <select id="skinSelect">
+        <option value="green">Green Viper</option>
+        <option value="blue">Blue Neon</option>
+        <option value="red">Red Lava</option>
+        <option value="gold">Golden Dragon</option>
+    </select>
+
     <button id="startBtn">START GAME</button>
 </div>
 
-<div id="gameOver">
-    <h2>GAME OVER</h2>
-    <p id="finalScore"></p>
-    <button onclick="location.reload()">RESTART</button>
-</div>
-
+<!-- UI -->
 <div class="ui">
     Score: <span id="score">0</span><br>
     Energy: <span id="energy">100</span><br>
-    Rank: <span id="rank">1</span><br>
     <button id="boostBtn">BOOST</button>
+</div>
+
+<!-- Joystick -->
+<div id="joystick">
+    <div id="stick"></div>
 </div>
 
 <canvas id="game"></canvas>
