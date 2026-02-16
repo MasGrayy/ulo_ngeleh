@@ -66,7 +66,7 @@ function startGame(){
 }
 startBtn.onclick=startGame;
 
-/* ================= MOUSE CONTROL ================= */
+/* ================= CONTROL ================= */
 
 document.addEventListener("mousemove", e=>{
     if(!alive) return;
@@ -79,45 +79,6 @@ document.addEventListener("mousemove", e=>{
         dir.x=dx/mag;
         dir.y=dy/mag;
     }
-});
-
-/* ================= JOYSTICK ================= */
-
-if("ontouchstart" in window){
-    joy.style.display="block";
-}
-
-let dragging=false;
-
-joy.addEventListener("touchstart", ()=>dragging=true);
-
-joy.addEventListener("touchmove", e=>{
-    if(!dragging || !alive) return;
-    e.preventDefault();
-
-    let rect=joy.getBoundingClientRect();
-    let x=e.touches[0].clientX-rect.left-rect.width/2;
-    let y=e.touches[0].clientY-rect.top-rect.height/2;
-
-    let max=rect.width/2;
-    let dist=Math.hypot(x,y);
-
-    if(dist>max){
-        x=x/dist*max;
-        y=y/dist*max;
-    }
-
-    stick.style.left=(x+rect.width/2-30)+"px";
-    stick.style.top=(y+rect.height/2-30)+"px";
-
-    dir.x=x/max;
-    dir.y=y/max;
-});
-
-joy.addEventListener("touchend", ()=>{
-    dragging=false;
-    stick.style.left="30px";
-    stick.style.top="30px";
 });
 
 /* ================= BOOST ================= */
@@ -148,7 +109,6 @@ let newHead={
 
 snake.unshift(newHead);
 
-/* makan food */
 for(let i=foods.length-1;i>=0;i--){
     let f=foods[i];
     if(Math.hypot(f.x-newHead.x,f.y-newHead.y)<12){
@@ -157,7 +117,6 @@ for(let i=foods.length-1;i>=0;i--){
     }
 }
 
-/* panjang badan */
 if(snake.length>score/10+20){
     snake.pop();
 }
@@ -173,6 +132,9 @@ energyEl.innerText=Math.floor(energy);
 
 function draw(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
+
+/* kalau belum start jangan gambar ular */
+if(!alive) return;
 
 /* FOOD */
 foods.forEach(f=>{
@@ -217,23 +179,24 @@ if(snake.length>1){
 
 /* HEAD */
 let head=snake[0];
-let hx=head.x-camera.x;
-let hy=head.y-camera.y;
+if(head){
+    let hx=head.x-camera.x;
+    let hy=head.y-camera.y;
 
-ctx.fillStyle=skins[currentSkin].head;
-ctx.beginPath();
-ctx.arc(hx,hy,12,0,Math.PI*2);
-ctx.fill();
+    ctx.fillStyle=skins[currentSkin].head;
+    ctx.beginPath();
+    ctx.arc(hx,hy,12,0,Math.PI*2);
+    ctx.fill();
 
-/* mata */
-ctx.fillStyle="black";
-ctx.beginPath();
-ctx.arc(hx-4,hy-3,2,0,Math.PI*2);
-ctx.fill();
+    ctx.fillStyle="black";
+    ctx.beginPath();
+    ctx.arc(hx-4,hy-3,2,0,Math.PI*2);
+    ctx.fill();
 
-ctx.beginPath();
-ctx.arc(hx+4,hy-3,2,0,Math.PI*2);
-ctx.fill();
+    ctx.beginPath();
+    ctx.arc(hx+4,hy-3,2,0,Math.PI*2);
+    ctx.fill();
+}
 }
 
 /* ================= LOOP ================= */
