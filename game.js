@@ -13,7 +13,7 @@ const skinSelect = document.getElementById("skinSelect");
 const joy = document.getElementById("joystick");
 const stick = document.getElementById("stick");
 
-/* ================= DEVICE DETECTION ================= */
+/* ================= DEVICE ================= */
 if (window.matchMedia("(pointer: coarse)").matches) {
     joy.style.display = "block";
 }
@@ -28,6 +28,7 @@ window.addEventListener("resize", resizeCanvas);
 
 /* ================= GAME VAR ================= */
 let snake=[];
+let bots=[];
 let foods=[];
 let dir={x:1,y:0};
 let score=0;
@@ -49,68 +50,48 @@ const skins={
 
 /* ================= START ================= */
 startBtn.onclick = () => {
+
     currentSkin = skinSelect.value;
+
     snake=[{x:1000,y:1000}];
+    bots=[];
     foods=[];
     score=0;
     energy=100;
     alive=true;
 
-    for(let i=0;i<150;i++){
+    // spawn food
+    for(let i=0;i<200;i++){
         foods.push({
             x:Math.random()*worldSize,
             y:Math.random()*worldSize
         });
     }
 
+    // spawn bots
+    for(let i=0;i<3;i++){
+        bots.push({
+            body:[{x:Math.random()*worldSize,y:Math.random()*worldSize}],
+            dir:{x:1,y:0},
+            color:["#ff00ff","#00ffff","#ffaa00"][i]
+        });
+    }
+
     menu.style.display="none";
 };
 
-/* ================= CONTROL PC ================= */
+/* ================= PLAYER CONTROL ================= */
 document.addEventListener("mousemove", e=>{
     if(!alive) return;
 
     let dx=e.clientX-window.innerWidth/2;
     let dy=e.clientY-window.innerHeight/2;
     let mag=Math.hypot(dx,dy);
+
     if(mag>0){
         dir.x=dx/mag;
         dir.y=dy/mag;
     }
-});
-
-/* ================= JOYSTICK ================= */
-let dragging=false;
-
-joy.addEventListener("touchstart", ()=>dragging=true);
-
-joy.addEventListener("touchmove", e=>{
-    if(!dragging || !alive) return;
-    e.preventDefault();
-
-    let rect=joy.getBoundingClientRect();
-    let x=e.touches[0].clientX-rect.left-rect.width/2;
-    let y=e.touches[0].clientY-rect.top-rect.height/2;
-
-    let max=rect.width/2;
-    let dist=Math.hypot(x,y);
-
-    if(dist>max){
-        x=x/dist*max;
-        y=y/dist*max;
-    }
-
-    stick.style.left=(x+rect.width/2-30)+"px";
-    stick.style.top=(y+rect.height/2-30)+"px";
-
-    dir.x=x/max;
-    dir.y=y/max;
-});
-
-joy.addEventListener("touchend", ()=>{
-    dragging=false;
-    stick.style.left="30px";
-    stick.style.top="30px";
 });
 
 /* ================= BOOST ================= */
@@ -119,10 +100,60 @@ boostBtn.onmouseup=()=>boost=false;
 boostBtn.ontouchstart=()=>boost=true;
 boostBtn.ontouchend=()=>boost=false;
 
+/* ================= BOT AI ================= */
+function updateBots(){
+
+    bots.forEach(bot=>{
+
+        let head=bot.body[0];
+
+        // cari food terdekat
+        let nearest=null;
+        let minDist=Infinity;
+
+        foods.forEach(f=>{
+            let d=Math.hypot(f.x-head.x,f.y-head.y);
+            if(d<minDist){
+                minDist=d;
+                nearest=f;
+            }
+        });
+
+        if(nearest){
+            let dx=nearest.x-head.x;
+            let dy=nearest.y-head.y;
+            let mag=Math.hypot(dx,dy);
+
+            bot.dir.x=dx/mag;
+            bot.dir.y=dy/mag;
+        }
+
+        let newHead={
+            x:head.x+bot.dir.x*2,
+            y:head.y+bot.dir.y*2
+        };
+
+        bot.body.unshift(newHead);
+
+        // makan food
+        for(let i=foods.length-1;i>=0;i--){
+            if(Math.hypot(foods[i].x-newHead.x,foods[i].y-newHead.y)<12){
+                foods.splice(i,1);
+                break;
+            }
+        }
+
+        if(bot.body.length>30){
+            bot.body.pop();
+        }
+    });
+}
+
 /* ================= UPDATE ================= */
 function update(){
 if(!alive) return;
 
+/* PLAYER */
 let head=snake[0];
 let speed=(boost && energy>0)?4:2;
 
@@ -150,6 +181,9 @@ camera.y=newHead.y-window.innerHeight/2;
 
 scoreEl.textContent=score;
 energyEl.textContent=Math.floor(energy);
+
+/* UPDATE BOT */
+updateBots();
 }
 
 /* ================= DRAW ================= */
@@ -165,56 +199,42 @@ foods.forEach(f=>{
     ctx.fill();
 });
 
-/* BODY */
-if(snake.length>1){
-    ctx.lineCap="round";
-    ctx.lineJoin="round";
-    ctx.lineWidth=18;
+/* DRAW PLAYER */
+drawSnake(snake, skins[currentSkin].body, skins[currentSkin].head);
 
-    ctx.beginPath();
-    snake.forEach((s,i)=>{
-        let x=s.x-camera.x;
-        let y=s.y-camera.y;
-        if(i===0) ctx.moveTo(x,y);
-        else ctx.lineTo(x,y);
-    });
-
-    let tail=snake[snake.length-1];
-    let grad=ctx.createLinearGradient(
-        snake[0].x-camera.x,
-        snake[0].y-camera.y,
-        tail.x-camera.x,
-        tail.y-camera.y
-    );
-
-    grad.addColorStop(0, skins[currentSkin].head);
-    grad.addColorStop(1, skins[currentSkin].body);
-
-    ctx.strokeStyle=grad;
-    ctx.shadowBlur=15;
-    ctx.shadowColor=skins[currentSkin].body;
-    ctx.stroke();
-    ctx.shadowBlur=0;
+/* DRAW BOTS */
+bots.forEach(bot=>{
+    drawSnake(bot.body, bot.color, bot.color);
+});
 }
 
-/* HEAD */
-let head=snake[0];
-let hx=head.x-camera.x;
-let hy=head.y-camera.y;
+function drawSnake(body, bodyColor, headColor){
 
-ctx.fillStyle=skins[currentSkin].head;
-ctx.beginPath();
-ctx.arc(hx,hy,12,0,Math.PI*2);
-ctx.fill();
+    if(body.length>1){
+        ctx.lineCap="round";
+        ctx.lineJoin="round";
+        ctx.lineWidth=16;
 
-ctx.fillStyle="black";
-ctx.beginPath();
-ctx.arc(hx-4,hy-3,2,0,Math.PI*2);
-ctx.fill();
+        ctx.beginPath();
+        body.forEach((s,i)=>{
+            let x=s.x-camera.x;
+            let y=s.y-camera.y;
+            if(i===0) ctx.moveTo(x,y);
+            else ctx.lineTo(x,y);
+        });
 
-ctx.beginPath();
-ctx.arc(hx+4,hy-3,2,0,Math.PI*2);
-ctx.fill();
+        ctx.strokeStyle=bodyColor;
+        ctx.stroke();
+    }
+
+    let head=body[0];
+    let hx=head.x-camera.x;
+    let hy=head.y-camera.y;
+
+    ctx.fillStyle=headColor;
+    ctx.beginPath();
+    ctx.arc(hx,hy,10,0,Math.PI*2);
+    ctx.fill();
 }
 
 /* ================= LOOP ================= */
