@@ -1,4 +1,4 @@
-window.addEventListener("DOMContentLoaded", function(){
+window.addEventListener("DOMContentLoaded", () => {
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -13,8 +13,12 @@ const skinSelect = document.getElementById("skinSelect");
 const joy = document.getElementById("joystick");
 const stick = document.getElementById("stick");
 
-/* ================= CANVAS ================= */
+/* ================= DEVICE DETECTION ================= */
+if (window.matchMedia("(pointer: coarse)").matches) {
+    joy.style.display = "block";
+}
 
+/* ================= CANVAS ================= */
 function resizeCanvas(){
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -23,7 +27,6 @@ resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
 /* ================= GAME VAR ================= */
-
 let snake=[];
 let foods=[];
 let dir={x:1,y:0};
@@ -44,11 +47,9 @@ const skins={
     gold:{head:"#ffe066",body:"#ffaa00"}
 };
 
-/* ================= START GAME ================= */
-
-function startGame(){
+/* ================= START ================= */
+startBtn.onclick = () => {
     currentSkin = skinSelect.value;
-
     snake=[{x:1000,y:1000}];
     foods=[];
     score=0;
@@ -63,44 +64,70 @@ function startGame(){
     }
 
     menu.style.display="none";
-}
-startBtn.onclick=startGame;
+};
 
-/* ================= CONTROL ================= */
-
+/* ================= CONTROL PC ================= */
 document.addEventListener("mousemove", e=>{
     if(!alive) return;
 
     let dx=e.clientX-window.innerWidth/2;
     let dy=e.clientY-window.innerHeight/2;
     let mag=Math.hypot(dx,dy);
-
     if(mag>0){
         dir.x=dx/mag;
         dir.y=dy/mag;
     }
 });
 
-/* ================= BOOST ================= */
+/* ================= JOYSTICK ================= */
+let dragging=false;
 
+joy.addEventListener("touchstart", ()=>dragging=true);
+
+joy.addEventListener("touchmove", e=>{
+    if(!dragging || !alive) return;
+    e.preventDefault();
+
+    let rect=joy.getBoundingClientRect();
+    let x=e.touches[0].clientX-rect.left-rect.width/2;
+    let y=e.touches[0].clientY-rect.top-rect.height/2;
+
+    let max=rect.width/2;
+    let dist=Math.hypot(x,y);
+
+    if(dist>max){
+        x=x/dist*max;
+        y=y/dist*max;
+    }
+
+    stick.style.left=(x+rect.width/2-30)+"px";
+    stick.style.top=(y+rect.height/2-30)+"px";
+
+    dir.x=x/max;
+    dir.y=y/max;
+});
+
+joy.addEventListener("touchend", ()=>{
+    dragging=false;
+    stick.style.left="30px";
+    stick.style.top="30px";
+});
+
+/* ================= BOOST ================= */
 boostBtn.onmousedown=()=>boost=true;
 boostBtn.onmouseup=()=>boost=false;
 boostBtn.ontouchstart=()=>boost=true;
 boostBtn.ontouchend=()=>boost=false;
 
 /* ================= UPDATE ================= */
-
 function update(){
 if(!alive) return;
 
 let head=snake[0];
 let speed=(boost && energy>0)?4:2;
 
-if(boost && energy>0){
-    energy-=0.5;
-}else if(energy<100){
-    energy+=0.2;
-}
+if(boost && energy>0) energy-=0.5;
+else if(energy<100) energy+=0.2;
 
 let newHead={
     x:head.x+dir.x*speed,
@@ -110,30 +137,24 @@ let newHead={
 snake.unshift(newHead);
 
 for(let i=foods.length-1;i>=0;i--){
-    let f=foods[i];
-    if(Math.hypot(f.x-newHead.x,f.y-newHead.y)<12){
+    if(Math.hypot(foods[i].x-newHead.x,foods[i].y-newHead.y)<12){
         foods.splice(i,1);
         score+=10;
     }
 }
 
-if(snake.length>score/10+20){
-    snake.pop();
-}
+if(snake.length>score/10+20) snake.pop();
 
 camera.x=newHead.x-window.innerWidth/2;
 camera.y=newHead.y-window.innerHeight/2;
 
-scoreEl.innerText=score;
-energyEl.innerText=Math.floor(energy);
+scoreEl.textContent=score;
+energyEl.textContent=Math.floor(energy);
 }
 
 /* ================= DRAW ================= */
-
 function draw(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
-
-/* kalau belum start jangan gambar ular */
 if(!alive) return;
 
 /* FOOD */
@@ -159,7 +180,6 @@ if(snake.length>1){
     });
 
     let tail=snake[snake.length-1];
-
     let grad=ctx.createLinearGradient(
         snake[0].x-camera.x,
         snake[0].y-camera.y,
@@ -179,28 +199,25 @@ if(snake.length>1){
 
 /* HEAD */
 let head=snake[0];
-if(head){
-    let hx=head.x-camera.x;
-    let hy=head.y-camera.y;
+let hx=head.x-camera.x;
+let hy=head.y-camera.y;
 
-    ctx.fillStyle=skins[currentSkin].head;
-    ctx.beginPath();
-    ctx.arc(hx,hy,12,0,Math.PI*2);
-    ctx.fill();
+ctx.fillStyle=skins[currentSkin].head;
+ctx.beginPath();
+ctx.arc(hx,hy,12,0,Math.PI*2);
+ctx.fill();
 
-    ctx.fillStyle="black";
-    ctx.beginPath();
-    ctx.arc(hx-4,hy-3,2,0,Math.PI*2);
-    ctx.fill();
+ctx.fillStyle="black";
+ctx.beginPath();
+ctx.arc(hx-4,hy-3,2,0,Math.PI*2);
+ctx.fill();
 
-    ctx.beginPath();
-    ctx.arc(hx+4,hy-3,2,0,Math.PI*2);
-    ctx.fill();
-}
+ctx.beginPath();
+ctx.arc(hx+4,hy-3,2,0,Math.PI*2);
+ctx.fill();
 }
 
 /* ================= LOOP ================= */
-
 function loop(){
 update();
 draw();
