@@ -13,62 +13,63 @@ const skinSelect = document.getElementById("skinSelect");
 const joy = document.getElementById("joystick");
 const stick = document.getElementById("stick");
 
-/* ================= DEVICE ================= */
+/* ================= DEVICE DETECTION ================= */
 if (window.matchMedia("(pointer: coarse)").matches) {
     joy.style.display = "block";
 }
 
 /* ================= CANVAS ================= */
-function resize(){
+function resizeCanvas(){
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 }
-resize();
-window.addEventListener("resize", resize);
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
 
-/* ================= GAME DATA ================= */
-let player = [];
-let bots = [];
-let foods = [];
-let dir = {x:1,y:0};
-let score = 0;
-let energy = 100;
-let boost = false;
-let alive = false;
-let camera = {x:0,y:0};
-const worldSize = 2000;
+/* ================= GAME VAR ================= */
+let snake=[];
+let foods=[];
+let dir={x:1,y:0};
+let score=0;
+let energy=100;
+let boost=false;
+let alive=false;
+
+let camera={x:0,y:0};
+const worldSize=2000;
+
+let currentSkin="green";
+
+const skins={
+    green:{head:"#b4ff4a",body:"#00ff88"},
+    blue:{head:"#66ccff",body:"#0099ff"},
+    red:{head:"#ff6666",body:"#ff0000"},
+    gold:{head:"#ffe066",body:"#ffaa00"}
+};
 
 /* ================= START ================= */
 startBtn.onclick = () => {
+    currentSkin = skinSelect.value;
+    snake=[{x:1000,y:1000}];
+    foods=[];
+    score=0;
+    energy=100;
+    alive=true;
 
-    player = [{x:1000,y:1000}];
-    bots = [];
-    foods = [];
-    score = 0;
-    energy = 100;
-    alive = true;
-
-    for(let i=0;i<200;i++){
+    for(let i=0;i<150;i++){
         foods.push({
             x:Math.random()*worldSize,
             y:Math.random()*worldSize
         });
     }
 
-    for(let i=0;i<3;i++){
-        bots.push({
-            body:[{x:Math.random()*worldSize,y:Math.random()*worldSize}],
-            dir:{x:1,y:0},
-            color:["#ff00ff","#00ffff","#ffaa00"][i]
-        });
-    }
-
     menu.style.display="none";
 };
 
-/* ================= PLAYER CONTROL ================= */
+/* ================= CONTROL PC ================= */
 document.addEventListener("mousemove", e=>{
     if(!alive) return;
+
     let dx=e.clientX-window.innerWidth/2;
     let dy=e.clientY-window.innerHeight/2;
     let mag=Math.hypot(dx,dy);
@@ -78,91 +79,51 @@ document.addEventListener("mousemove", e=>{
     }
 });
 
-/* ================= JOYSTICK ULTRA SMOOTH ================= */
+/* ================= JOYSTICK ================= */
+let dragging=false;
 
-if (window.matchMedia("(pointer: coarse)").matches) {
-    joy.style.display = "block";
-}
+joy.addEventListener("touchstart", ()=>dragging=true);
 
-let dragging = false;
-let inputX = 1;
-let inputY = 0;
+joy.addEventListener("touchmove", e=>{
+    if(!dragging || !alive) return;
+    e.preventDefault();
 
-joy.addEventListener("pointerdown", e => {
-    if (!alive) return;
-    dragging = true;
-    joy.setPointerCapture(e.pointerId);
-});
+    let rect=joy.getBoundingClientRect();
+    let x=e.touches[0].clientX-rect.left-rect.width/2;
+    let y=e.touches[0].clientY-rect.top-rect.height/2;
 
-joy.addEventListener("pointermove", e => {
-    if (!dragging || !alive) return;
+    let max=rect.width/2;
+    let dist=Math.hypot(x,y);
 
-    const rect = joy.getBoundingClientRect();
-    let x = e.clientX - rect.left - rect.width / 2;
-    let y = e.clientY - rect.top - rect.height / 2;
-
-    const max = rect.width / 2;
-    const dist = Math.hypot(x, y);
-
-    if (dist > max) {
-        x = (x / dist) * max;
-        y = (y / dist) * max;
+    if(dist>max){
+        x=x/dist*max;
+        y=y/dist*max;
     }
 
-    stick.style.left = (x + rect.width / 2 - 30) + "px";
-    stick.style.top = (y + rect.height / 2 - 30) + "px";
+    stick.style.left=(x+rect.width/2-30)+"px";
+    stick.style.top=(y+rect.height/2-30)+"px";
 
-    inputX = x / max;
-    inputY = y / max;
+    dir.x=x/max;
+    dir.y=y/max;
 });
 
-joy.addEventListener("pointerup", () => {
-    dragging = false;
-    stick.style.left = "30px";
-    stick.style.top = "30px";
+joy.addEventListener("touchend", ()=>{
+    dragging=false;
+    stick.style.left="30px";
+    stick.style.top="30px";
 });
-/* ================= BOT AI ================= */
-function updateBots(){
-    bots.forEach(bot=>{
-        let head=bot.body[0];
 
-        let nearest=null;
-        let min=Infinity;
-
-        foods.forEach(f=>{
-            let d=Math.hypot(f.x-head.x,f.y-head.y);
-            if(d<min){
-                min=d;
-                nearest=f;
-            }
-        });
-
-        if(nearest){
-            let dx=nearest.x-head.x;
-            let dy=nearest.y-head.y;
-            let mag=Math.hypot(dx,dy);
-            bot.dir.x=dx/mag;
-            bot.dir.y=dy/mag;
-        }
-
-        let newHead={
-            x:head.x+bot.dir.x*2,
-            y:head.y+bot.dir.y*2
-        };
-
-        bot.body.unshift(newHead);
-
-        if(bot.body.length>30){
-            bot.body.pop();
-        }
-    });
-}
+/* ================= BOOST ================= */
+boostBtn.onmousedown=()=>boost=true;
+boostBtn.onmouseup=()=>boost=false;
+boostBtn.ontouchstart=()=>boost=true;
+boostBtn.ontouchend=()=>boost=false;
 
 /* ================= UPDATE ================= */
 function update(){
 if(!alive) return;
 
-let head=player[0];
+let head=snake[0];
 let speed=(boost && energy>0)?4:2;
 
 if(boost && energy>0) energy-=0.5;
@@ -173,7 +134,7 @@ let newHead={
     y:head.y+dir.y*speed
 };
 
-player.unshift(newHead);
+snake.unshift(newHead);
 
 for(let i=foods.length-1;i>=0;i--){
     if(Math.hypot(foods[i].x-newHead.x,foods[i].y-newHead.y)<12){
@@ -182,15 +143,13 @@ for(let i=foods.length-1;i>=0;i--){
     }
 }
 
-if(player.length>score/10+20) player.pop();
+if(snake.length>score/10+20) snake.pop();
 
 camera.x=newHead.x-window.innerWidth/2;
 camera.y=newHead.y-window.innerHeight/2;
 
 scoreEl.textContent=score;
 energyEl.textContent=Math.floor(energy);
-
-updateBots();
 }
 
 /* ================= DRAW ================= */
@@ -206,38 +165,56 @@ foods.forEach(f=>{
     ctx.fill();
 });
 
-/* PLAYER */
-drawSnake(player,"#00ff88");
+/* BODY */
+if(snake.length>1){
+    ctx.lineCap="round";
+    ctx.lineJoin="round";
+    ctx.lineWidth=18;
 
-/* BOTS */
-bots.forEach(bot=>{
-    drawSnake(bot.body,bot.color);
-});
+    ctx.beginPath();
+    snake.forEach((s,i)=>{
+        let x=s.x-camera.x;
+        let y=s.y-camera.y;
+        if(i===0) ctx.moveTo(x,y);
+        else ctx.lineTo(x,y);
+    });
+
+    let tail=snake[snake.length-1];
+    let grad=ctx.createLinearGradient(
+        snake[0].x-camera.x,
+        snake[0].y-camera.y,
+        tail.x-camera.x,
+        tail.y-camera.y
+    );
+
+    grad.addColorStop(0, skins[currentSkin].head);
+    grad.addColorStop(1, skins[currentSkin].body);
+
+    ctx.strokeStyle=grad;
+    ctx.shadowBlur=15;
+    ctx.shadowColor=skins[currentSkin].body;
+    ctx.stroke();
+    ctx.shadowBlur=0;
 }
 
-function drawSnake(body,color){
-    if(body.length>1){
-        ctx.lineWidth=16;
-        ctx.lineCap="round";
-        ctx.beginPath();
-        body.forEach((s,i)=>{
-            let x=s.x-camera.x;
-            let y=s.y-camera.y;
-            if(i===0) ctx.moveTo(x,y);
-            else ctx.lineTo(x,y);
-        });
-        ctx.strokeStyle=color;
-        ctx.stroke();
-    }
+/* HEAD */
+let head=snake[0];
+let hx=head.x-camera.x;
+let hy=head.y-camera.y;
 
-    let head=body[0];
-    let hx=head.x-camera.x;
-    let hy=head.y-camera.y;
+ctx.fillStyle=skins[currentSkin].head;
+ctx.beginPath();
+ctx.arc(hx,hy,12,0,Math.PI*2);
+ctx.fill();
 
-    ctx.fillStyle=color;
-    ctx.beginPath();
-    ctx.arc(hx,hy,10,0,Math.PI*2);
-    ctx.fill();
+ctx.fillStyle="black";
+ctx.beginPath();
+ctx.arc(hx-4,hy-3,2,0,Math.PI*2);
+ctx.fill();
+
+ctx.beginPath();
+ctx.arc(hx+4,hy-3,2,0,Math.PI*2);
+ctx.fill();
 }
 
 /* ================= LOOP ================= */
@@ -249,5 +226,3 @@ requestAnimationFrame(loop);
 loop();
 
 });
-
-
