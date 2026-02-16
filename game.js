@@ -19,48 +19,35 @@ if (window.matchMedia("(pointer: coarse)").matches) {
 }
 
 /* ================= CANVAS ================= */
-function resizeCanvas(){
+function resize(){
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 }
-resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
+resize();
+window.addEventListener("resize", resize);
 
-/* ================= GAME VAR ================= */
-let snake=[];
-let bots=[];
-let foods=[];
-let dir={x:1,y:0};
-let score=0;
-let energy=100;
-let boost=false;
-let alive=false;
-
-let camera={x:0,y:0};
-const worldSize=2000;
-
-let currentSkin="green";
-
-const skins={
-    green:{head:"#b4ff4a",body:"#00ff88"},
-    blue:{head:"#66ccff",body:"#0099ff"},
-    red:{head:"#ff6666",body:"#ff0000"},
-    gold:{head:"#ffe066",body:"#ffaa00"}
-};
+/* ================= GAME DATA ================= */
+let player = [];
+let bots = [];
+let foods = [];
+let dir = {x:1,y:0};
+let score = 0;
+let energy = 100;
+let boost = false;
+let alive = false;
+let camera = {x:0,y:0};
+const worldSize = 2000;
 
 /* ================= START ================= */
 startBtn.onclick = () => {
 
-    currentSkin = skinSelect.value;
+    player = [{x:1000,y:1000}];
+    bots = [];
+    foods = [];
+    score = 0;
+    energy = 100;
+    alive = true;
 
-    snake=[{x:1000,y:1000}];
-    bots=[];
-    foods=[];
-    score=0;
-    energy=100;
-    alive=true;
-
-    // spawn food
     for(let i=0;i<200;i++){
         foods.push({
             x:Math.random()*worldSize,
@@ -68,7 +55,6 @@ startBtn.onclick = () => {
         });
     }
 
-    // spawn bots
     for(let i=0;i<3;i++){
         bots.push({
             body:[{x:Math.random()*worldSize,y:Math.random()*worldSize}],
@@ -83,15 +69,50 @@ startBtn.onclick = () => {
 /* ================= PLAYER CONTROL ================= */
 document.addEventListener("mousemove", e=>{
     if(!alive) return;
-
     let dx=e.clientX-window.innerWidth/2;
     let dy=e.clientY-window.innerHeight/2;
     let mag=Math.hypot(dx,dy);
-
     if(mag>0){
         dir.x=dx/mag;
         dir.y=dy/mag;
     }
+});
+
+/* ================= JOYSTICK ================= */
+let dragging=false;
+
+joy.addEventListener("pointerdown", e=>{
+    if(!alive) return;
+    dragging=true;
+    joy.setPointerCapture(e.pointerId);
+});
+
+joy.addEventListener("pointermove", e=>{
+    if(!dragging || !alive) return;
+
+    let rect=joy.getBoundingClientRect();
+    let x=e.clientX-rect.left-rect.width/2;
+    let y=e.clientY-rect.top-rect.height/2;
+
+    let max=rect.width/2;
+    let dist=Math.hypot(x,y);
+
+    if(dist>max){
+        x=(x/dist)*max;
+        y=(y/dist)*max;
+    }
+
+    stick.style.left=(x+rect.width/2-30)+"px";
+    stick.style.top=(y+rect.height/2-30)+"px";
+
+    dir.x=x/max;
+    dir.y=y/max;
+});
+
+joy.addEventListener("pointerup", ()=>{
+    dragging=false;
+    stick.style.left="30px";
+    stick.style.top="30px";
 });
 
 /* ================= BOOST ================= */
@@ -102,19 +123,16 @@ boostBtn.ontouchend=()=>boost=false;
 
 /* ================= BOT AI ================= */
 function updateBots(){
-
     bots.forEach(bot=>{
-
         let head=bot.body[0];
 
-        // cari food terdekat
         let nearest=null;
-        let minDist=Infinity;
+        let min=Infinity;
 
         foods.forEach(f=>{
             let d=Math.hypot(f.x-head.x,f.y-head.y);
-            if(d<minDist){
-                minDist=d;
+            if(d<min){
+                min=d;
                 nearest=f;
             }
         });
@@ -123,7 +141,6 @@ function updateBots(){
             let dx=nearest.x-head.x;
             let dy=nearest.y-head.y;
             let mag=Math.hypot(dx,dy);
-
             bot.dir.x=dx/mag;
             bot.dir.y=dy/mag;
         }
@@ -135,14 +152,6 @@ function updateBots(){
 
         bot.body.unshift(newHead);
 
-        // makan food
-        for(let i=foods.length-1;i>=0;i--){
-            if(Math.hypot(foods[i].x-newHead.x,foods[i].y-newHead.y)<12){
-                foods.splice(i,1);
-                break;
-            }
-        }
-
         if(bot.body.length>30){
             bot.body.pop();
         }
@@ -153,8 +162,7 @@ function updateBots(){
 function update(){
 if(!alive) return;
 
-/* PLAYER */
-let head=snake[0];
+let head=player[0];
 let speed=(boost && energy>0)?4:2;
 
 if(boost && energy>0) energy-=0.5;
@@ -165,7 +173,7 @@ let newHead={
     y:head.y+dir.y*speed
 };
 
-snake.unshift(newHead);
+player.unshift(newHead);
 
 for(let i=foods.length-1;i>=0;i--){
     if(Math.hypot(foods[i].x-newHead.x,foods[i].y-newHead.y)<12){
@@ -174,7 +182,7 @@ for(let i=foods.length-1;i>=0;i--){
     }
 }
 
-if(snake.length>score/10+20) snake.pop();
+if(player.length>score/10+20) player.pop();
 
 camera.x=newHead.x-window.innerWidth/2;
 camera.y=newHead.y-window.innerHeight/2;
@@ -182,7 +190,6 @@ camera.y=newHead.y-window.innerHeight/2;
 scoreEl.textContent=score;
 energyEl.textContent=Math.floor(energy);
 
-/* UPDATE BOT */
 updateBots();
 }
 
@@ -199,22 +206,19 @@ foods.forEach(f=>{
     ctx.fill();
 });
 
-/* DRAW PLAYER */
-drawSnake(snake, skins[currentSkin].body, skins[currentSkin].head);
+/* PLAYER */
+drawSnake(player,"#00ff88");
 
-/* DRAW BOTS */
+/* BOTS */
 bots.forEach(bot=>{
-    drawSnake(bot.body, bot.color, bot.color);
+    drawSnake(bot.body,bot.color);
 });
 }
 
-function drawSnake(body, bodyColor, headColor){
-
+function drawSnake(body,color){
     if(body.length>1){
-        ctx.lineCap="round";
-        ctx.lineJoin="round";
         ctx.lineWidth=16;
-
+        ctx.lineCap="round";
         ctx.beginPath();
         body.forEach((s,i)=>{
             let x=s.x-camera.x;
@@ -222,8 +226,7 @@ function drawSnake(body, bodyColor, headColor){
             if(i===0) ctx.moveTo(x,y);
             else ctx.lineTo(x,y);
         });
-
-        ctx.strokeStyle=bodyColor;
+        ctx.strokeStyle=color;
         ctx.stroke();
     }
 
@@ -231,7 +234,7 @@ function drawSnake(body, bodyColor, headColor){
     let hx=head.x-camera.x;
     let hy=head.y-camera.y;
 
-    ctx.fillStyle=headColor;
+    ctx.fillStyle=color;
     ctx.beginPath();
     ctx.arc(hx,hy,10,0,Math.PI*2);
     ctx.fill();
