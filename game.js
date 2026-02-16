@@ -78,48 +78,59 @@ document.addEventListener("mousemove", e=>{
     }
 });
 
-/* ================= JOYSTICK ================= */
-let dragging=false;
+/* ================= JOYSTICK PREMIUM SMOOTH ================= */
 
-joy.addEventListener("pointerdown", e=>{
-    if(!alive) return;
-    dragging=true;
+if (window.matchMedia("(pointer: coarse)").matches) {
+    joy.style.display = "block";
+}
+
+let dragging = false;
+let targetDir = { x: 1, y: 0 };   // arah target dari joystick
+let smoothFactor = 0.15;          // makin kecil makin halus
+
+joy.addEventListener("pointerdown", e => {
+    if (!alive) return;
+    dragging = true;
     joy.setPointerCapture(e.pointerId);
 });
 
-joy.addEventListener("pointermove", e=>{
-    if(!dragging || !alive) return;
+joy.addEventListener("pointermove", e => {
+    if (!dragging || !alive) return;
 
-    let rect=joy.getBoundingClientRect();
-    let x=e.clientX-rect.left-rect.width/2;
-    let y=e.clientY-rect.top-rect.height/2;
+    const rect = joy.getBoundingClientRect();
+    let x = e.clientX - rect.left - rect.width / 2;
+    let y = e.clientY - rect.top - rect.height / 2;
 
-    let max=rect.width/2;
-    let dist=Math.hypot(x,y);
+    const max = rect.width / 2;
+    const dist = Math.hypot(x, y);
 
-    if(dist>max){
-        x=(x/dist)*max;
-        y=(y/dist)*max;
+    // Deadzone (biar tidak goyang di tengah)
+    const deadzone = 10;
+    if (dist < deadzone) {
+        targetDir.x = 0;
+        targetDir.y = 0;
+        return;
     }
 
-    stick.style.left=(x+rect.width/2-30)+"px";
-    stick.style.top=(y+rect.height/2-30)+"px";
+    if (dist > max) {
+        x = (x / dist) * max;
+        y = (y / dist) * max;
+    }
 
-    dir.x=x/max;
-    dir.y=y/max;
+    stick.style.left = (x + rect.width / 2 - 30) + "px";
+    stick.style.top = (y + rect.height / 2 - 30) + "px";
+
+    targetDir.x = x / max;
+    targetDir.y = y / max;
 });
 
-joy.addEventListener("pointerup", ()=>{
-    dragging=false;
-    stick.style.left="30px";
-    stick.style.top="30px";
+joy.addEventListener("pointerup", () => {
+    dragging = false;
+    stick.style.left = "30px";
+    stick.style.top = "30px";
 });
 
-/* ================= BOOST ================= */
-boostBtn.onmousedown=()=>boost=true;
-boostBtn.onmouseup=()=>boost=false;
-boostBtn.ontouchstart=()=>boost=true;
-boostBtn.ontouchend=()=>boost=false;
+
 
 /* ================= BOT AI ================= */
 function updateBots(){
@@ -249,3 +260,4 @@ requestAnimationFrame(loop);
 loop();
 
 });
+
