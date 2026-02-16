@@ -78,15 +78,15 @@ document.addEventListener("mousemove", e=>{
     }
 });
 
-/* ================= JOYSTICK PREMIUM SMOOTH ================= */
+/* ================= JOYSTICK ULTRA SMOOTH ================= */
 
 if (window.matchMedia("(pointer: coarse)").matches) {
     joy.style.display = "block";
 }
 
 let dragging = false;
-let targetDir = { x: 1, y: 0 };   // arah target dari joystick
-let smoothFactor = 0.15;          // makin kecil makin halus
+let inputX = 1;
+let inputY = 0;
 
 joy.addEventListener("pointerdown", e => {
     if (!alive) return;
@@ -104,14 +104,6 @@ joy.addEventListener("pointermove", e => {
     const max = rect.width / 2;
     const dist = Math.hypot(x, y);
 
-    // Deadzone (biar tidak goyang di tengah)
-    const deadzone = 10;
-    if (dist < deadzone) {
-        targetDir.x = 0;
-        targetDir.y = 0;
-        return;
-    }
-
     if (dist > max) {
         x = (x / dist) * max;
         y = (y / dist) * max;
@@ -120,8 +112,8 @@ joy.addEventListener("pointermove", e => {
     stick.style.left = (x + rect.width / 2 - 30) + "px";
     stick.style.top = (y + rect.height / 2 - 30) + "px";
 
-    targetDir.x = x / max;
-    targetDir.y = y / max;
+    inputX = x / max;
+    inputY = y / max;
 });
 
 joy.addEventListener("pointerup", () => {
@@ -129,9 +121,6 @@ joy.addEventListener("pointerup", () => {
     stick.style.left = "30px";
     stick.style.top = "30px";
 });
-
-
-
 /* ================= BOT AI ================= */
 function updateBots(){
     bots.forEach(bot=>{
@@ -260,4 +249,5 @@ requestAnimationFrame(loop);
 loop();
 
 });
+
 
